@@ -1,7 +1,7 @@
 import discord
 import markovify
 
-token = "NDI0MjMzNDI0NjkwMjE2OTYx.DY3dlg.fkKhF93eu8LFdyZgroCzf3n7z9M"
+token = "INSERT_TOKEN_HERE"
 
 print("Creating client")
 client = discord.Client()
