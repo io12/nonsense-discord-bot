@@ -30,7 +30,7 @@ async def on_message(message):
 	model = markovify.combine(models=[model, model__])
 	print("Frequency:", freq)
 	if message_id % freq == 0:
-		sentence = model.make_short_sentence(2000, 1)
+		sentence = model.make_short_sentence(140, 1)
 		if sentence is not None:
 			print("Sending message:", sentence)
 			await client.send_message(message.channel, sentence)
