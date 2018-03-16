@@ -6,7 +6,8 @@ token = "INSERT_TOKEN_HERE"
 print("Creating client")
 client = discord.Client()
 
-model = markovify.Text("Hello, I am a bot.", state_size=1)
+init_model = markovify.Text("Hello, I am a bot.", state_size=1)
+model = init_model
 freq = 1
 
 @client.event
@@ -21,6 +22,9 @@ async def on_message(message):
 	# we do not want the bot to reply to itself
 	if message.content.startswith("!nonsensefreq"):
 		freq = max(0, int(message.content.split()[1]))
+		return
+	if message.content.startswith("!nonsensereset"):
+		model = init_model
 		return
 	model__ = markovify.Text(message.content, state_size=1)
 	model = markovify.combine(models=[model, model__])
