@@ -9,6 +9,7 @@ client = discord.Client()
 init_model = markovify.Text("Hello, I am a bot.", state_size=1)
 model = init_model
 freq = 1
+max_chars = 140
 
 @client.event
 async def on_message(message):
@@ -23,14 +24,23 @@ async def on_message(message):
 	if message.content.startswith("!nonsensefreq"):
 		freq = max(0, int(message.content.split()[1]))
 		return
+	if message.content.startswith("!nonsensegetfreq"):
+		await client.send_message(message.channel, str(freq))
+		return
 	if message.content.startswith("!nonsensereset"):
 		model = init_model
+		return
+	if message.content.startswith("!nonsensemaxchars"):
+		max_chars = max(0, min(2000, int(message.content.split()[1])))
+		return
+	if message.content.startswith("!nonsensegetmaxchars"):
+		await client.send_message(message.channel, str(max_chars))
 		return
 	model__ = markovify.Text(message.content, state_size=1)
 	model = markovify.combine(models=[model, model__])
 	print("Frequency:", freq)
 	if message_id % freq == 0:
-		sentence = model.make_short_sentence(140, 1)
+		sentence = model.make_short_sentence(max_chars, 1)
 		if sentence is not None:
 			print("Sending message:", sentence)
 			await client.send_message(message.channel, sentence)
