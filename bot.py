@@ -16,6 +16,8 @@ def extend_model(model, text):
 	model__ = markovify.Text(text, state_size=1)
 	return markovify.combine(models=[model, model__])
 
+pings_regex = re.compile("<@\d+?>")
+
 def remove_pings(msg):
 	return pings_regex.sub("<PING REDACTED>", msg)
 
@@ -38,7 +40,6 @@ will_ping = True
 channel = client.get_channel("424388345796231168")
 if channel is None:
 	print("ERROR: Default channel does not exist")
-pings_regex = re.compile("<@\d+?>")
 
 @client.event
 async def on_message(message):
