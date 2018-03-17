@@ -1,26 +1,27 @@
 import discord
 import markovify
 
-token = "INSERT_TOKEN_HERE"
+#token = "INSERT_TOKEN_HERE"
+token = "NDI0MjMzNDI0NjkwMjE2OTYx.DY7LSQ.Qbvru6A50Lm1_WrQKBNfMo42VWI"
 
 model_filename = "model.json"
 
 def send_message(msg):
-        client.send_message(channel, msg)
+	client.send_message(channel, msg)
 
 def send_error(msg):
-        send_message("ERROR: " + msg)
+	send_message("ERROR: " + msg)
 
 def save_model():
-        try:
-                with open(model_filename, "w") as file:
-                        file.write(model.to_json())
-        except:
-                send_error():
+	try:
+		with open(model_filename, "w") as file:
+			file.write(model.to_json())
+	except:
+		send_error()
 
 def extend_model(model, text):
-        model__ = markovify.Text(text, state_size=1)
-        return markovify.combine(models=[model, model__])
+	model__ = markovify.Text(text, state_size=1)
+	return markovify.combine(models=[model, model__])
 
 @client.event
 async def on_message(message):
@@ -28,7 +29,7 @@ async def on_message(message):
 	global freq
 	global max_chars
 	global min_chars
-        global will_ping
+	global will_ping
 	global channel
 	# We do not want the bot to affect itself
 	if message.author == client.user:
@@ -46,15 +47,15 @@ async def on_message(message):
 	if message.content.startswith("!nonsense get maxchars"):
 		send_message(str(max_chars))
 		return
-        if message.content.startswith("!nonsense set willping true"):
+	if message.content.startswith("!nonsense set willping true"):
 		will_ping = True
-                return
-        if message.content.startswith("!nonsense set willping false"):
+		return
+	if message.content.startswith("!nonsense set willping false"):
 		will_ping = False
-                return
-        if message.content.startswith("!nonsense get willping"):
-                send_message(str(will_ping))
-                return
+		return
+	if message.content.startswith("!nonsense get willping"):
+		send_message(str(will_ping))
+		return
 	if message.content.startswith("!nonsense set channel"):
 		channel__ = client.get_channel(message.content.split()[3])
 		if channel__ is None:
@@ -62,17 +63,17 @@ async def on_message(message):
 		else:
 			channel = channel__
 		return
-        if message.content.startswith("!nonsense save") or
-                        message_id % save_freq == 0:
-                save_model()
-                return
-        model = extend_model(model, message.content)
+	if message.content.startswith("!nonsense save") or
+			message_id % save_freq == 0:
+		save_model()
+		return
+	model = extend_model(model, message.content)
 	if message.content.startswith("!nonsense") or message_id % freq == 0:
 		sentence = model.make_short_sentence(max_chars, min_chars)
 		if sentence is None:
-                        return
-                if not will_ping:
-                        sentence = sentence.replace("@", "<AT>")
+			return
+		if not will_ping:
+			sentence = sentence.replace("@", "<AT>")
 		print("Sending message:", sentence)
 		send_message(sentence)
 
@@ -87,13 +88,13 @@ print("Creating client")
 client = discord.Client()
 
 try:
-        with open(model_filename, "r") as file
-                model = markovify.Text.from_json(file.read())
+	with open(model_filename, "r") as file
+		model = markovify.Text.from_json(file.read())
 except:
-        print(model_filename, "could not be openend")
-        print("creating new model")
-        model = markovify.Text("Hello, I am a bot.", state_size=1)
-        
+	print(model_filename, "could not be openend")
+	print("creating new model")
+	model = markovify.Text("Hello, I am a bot.", state_size=1)
+
 freq = 1
 save_freq = 50
 max_chars = 140
