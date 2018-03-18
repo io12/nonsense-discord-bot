@@ -2,7 +2,8 @@ import re
 import discord
 import markovify
 
-token = "INSERT_TOKEN_HERE"
+token = "NDI0MjMzNDI0NjkwMjE2OTYx.DZBa4g.sEETkTvOPSTkgAGTFNBb_sYHrKM"
+#token = "INSERT_TOKEN_HERE"
 
 model_filename = "model.json"
 
@@ -45,6 +46,7 @@ if channel is None:
 async def on_message(message):
 	global model
 	global freq
+	global save_freq
 	global max_chars
 	global min_chars
 	global will_ping
@@ -52,21 +54,24 @@ async def on_message(message):
 	# We do not want the bot to affect itself
 	if message.author == client.user:
 		return
+	# Ignore PMs
+	if message.channel.is_private:
+		return
 	message_id = int(message.id)
 	if message.content.startswith("!nonsense set freq"):
-		freq = max(0, int(message.content.split()[3]))
+		freq = max(1, int(message.content.split()[3]))
 		return
 	if message.content.startswith("!nonsense get freq"):
 		await send_message(str(freq))
 		return
 	if message.content.startswith("!nonsense set savefreq"):
-		save_freq = max(0, int(message.content.split()[3]))
+		save_freq = max(1, int(message.content.split()[3]))
 		return
 	if message.content.startswith("!nonsense get savefreq"):
 		await send_message(str(save_freq))
 		return
 	if message.content.startswith("!nonsense set maxchars"):
-		max_chars = max(0, min(2000, int(message.content.split()[3])))
+		max_chars = max(1, min(2000, int(message.content.split()[3])))
 		return
 	if message.content.startswith("!nonsense get maxchars"):
 		await send_message(str(max_chars))
