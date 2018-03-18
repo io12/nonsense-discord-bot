@@ -2,8 +2,7 @@ import re
 import discord
 import markovify
 
-token = "NDI0MjMzNDI0NjkwMjE2OTYx.DZBa4g.sEETkTvOPSTkgAGTFNBb_sYHrKM"
-#token = "INSERT_TOKEN_HERE"
+token = "INSERT_TOKEN_HERE"
 
 model_filename = "model.json"
 
