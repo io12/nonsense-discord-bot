@@ -59,6 +59,12 @@ async def on_message(message):
 	if message.content.startswith("!nonsense get freq"):
 		await send_message(str(freq))
 		return
+	if message.content.startswith("!nonsense set savefreq"):
+		save_freq = max(0, int(message.content.split()[3]))
+		return
+	if message.content.startswith("!nonsense get savefreq"):
+		await send_message(str(save_freq))
+		return
 	if message.content.startswith("!nonsense set maxchars"):
 		max_chars = max(0, min(2000, int(message.content.split()[3])))
 		return
