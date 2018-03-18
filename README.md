@@ -14,6 +14,18 @@ Posts `freq`
 
 Sets the maximum character count of generated messages
 
+`!nonsense set savefreq <int>`
+
+Sets `save_freq`, where the bot saves after about every `freq` posts
+
+`!nonsense get savefreq`
+
+Posts `save_freq`
+
+`!nonsense set maxchars <int>`
+
+Sets the maximum character count of generated messages
+
 `!nonsense get maxchars`
 
 Posts the maximum character count of generated messages
