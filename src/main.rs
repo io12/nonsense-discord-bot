@@ -1,8 +1,11 @@
 extern crate discord;
 extern crate markov;
 
-use discord::model::{Channel, ChannelId, Event, MessageId, ReadyEvent};
-use discord::{Connection, Discord, GetMessages, State};
+use discord::model::{
+    Channel, ChannelId, ChannelType, Event, LiveServer, Message, MessageId,
+    PossibleServer, PublicChannel
+};
+use discord::{Discord, GetMessages};
 
 use std::env;
 use std::error::Error;
@@ -21,16 +24,59 @@ fn send_error(message : &str, discord : &Discord, channel_id : ChannelId) {
     send_message(&format!("ERROR: {}", message), discord, channel_id);
 }
 
+fn get_all_messages_in_channel(channel : &PublicChannel, discord : &Discord)
+        -> Vec<Message> {
+    let mut all_messages = Vec::new();
+    let mut msg_id;
+
+    let maybe_last_message = discord.get_message(channel.id,
+            channel.last_message_id.unwrap_or(MessageId(0)));
+    let last_message = match maybe_last_message {
+        Ok(message) => message,
+        Err(_) => return all_messages
+    };
+    all_messages.push(last_message);
+    msg_id = all_messages.last().unwrap().id;
+    loop {
+        let maybe_messages = discord.get_messages(channel.id,
+                GetMessages::Before(msg_id), Some(100));
+        match maybe_messages {
+            Ok(messages) => {
+                if messages.len() == 0 {
+                    break;
+                }
+                all_messages.extend(messages);
+                msg_id = all_messages.last().unwrap().id;
+            }
+            Err(_) => panic!("Error getting messages")
+        }
+    }
+    all_messages
+}
+
+fn get_all_messages_in_server(server : &LiveServer, discord : &Discord)
+        -> Vec<Message> {
+    server
+        .channels
+        .iter()
+        .filter(|channel| channel.kind == ChannelType::Text)
+        .map(|channel| get_all_messages_in_channel(channel, discord))
+        .fold(vec!(), |mut vec1, vec2| {
+            vec1.extend(vec2);
+            vec1
+        })
+}
+
 fn main() {
     println!("Logging in");
     let discord = &Discord::from_bot_token(
-        &env::var("DISCORD_CLIENT_TOKEN")
+        &env::var("DISCORD_TOKEN")
         .expect("No Discord client token; Run this bot with the \
-            DISCORD_CLIENT_TOKEN environment variable set"),
+                DISCORD_TOKEN environment variable set"),
     ).expect("Login failed");
 
     println!("Connecting bot");
-    let (mut connection, ready) = discord.connect().expect("Connection failed");
+    let (mut connection, _) = discord.connect().expect("Connection failed");
     println!("Connected");
 
     let current_user = discord.get_current_user()
@@ -49,30 +95,27 @@ fn main() {
         Ok(Channel::Public(channel)) => channel,
         Ok(_) => panic!("Channel is either a DM or a group chat; It should be \
             a server"),
-        Err(err) => panic!("{}", err.description())
+        Err(_) => panic!("Invalid channel ID")
     };
 
-    let state = State::new(ready);
-    println!("Bot has access to {} servers", state.servers().len());
-    
     println!("Looking up Discord server");
-    let server = state
-        .find_server(default_channel.server_id)
-        .expect("Cannot find server from specified channel");
+    let server;
+    loop {
+        match connection.recv_event() {
+            Ok(Event::ServerCreate(PossibleServer::Online(srv))) => {
+                if srv.id == default_channel.server_id {
+                    server = srv;
+                    println!("Found server");
+                    break;
+                }
+            }
+            Ok(_) => {}
+            Err(err) => panic!("Received error: {:?}", err)
+        }
+    }
 
     println!("Retrieving server messages");
-    let messages = server
-        .channels
-        .iter()
-        .map(
-            |channel| discord.get_messages(channel.id, GetMessages::MostRecent,
-                Some(u64::max_value()))
-            .expect("Failed to get messages")
-        )
-        .fold(vec!(), |mut vec1, vec2| {
-            vec1.extend(vec2);
-            vec1
-        });
+    let messages = get_all_messages_in_server(&server, &discord);
 
     println!("Populating markov chain");
     let mut markov_chain = markov::Chain::new();
@@ -80,6 +123,7 @@ fn main() {
         markov_chain.feed_str(&message.content);
     }
 
+    println!("Waiting for new messages");
     loop {
         match connection.recv_event() {
             Ok(Event::MessageCreate(message)) => {
@@ -130,16 +174,19 @@ fn main() {
                     send_info("Posting disabled", discord, channel_id);
                 } else if message.content.starts_with("!nonsense freq") {
                     match third_field_val {
-                        Ok(new_freq) => {
+                        Ok(new_freq) if new_freq > 0 => {
                             freq = new_freq;
                             send_info(&format!("Changed post frequency to {}",
-                                freq), discord, channel_id);
+                                    freq), discord, channel_id);
+                        }
+                        Ok(_) => {
+                            send_error("Stop trying to cause trouble :wink:",
+                                    discord, channel_id);
                         }
                         Err(err) => {
                             send_error(err.description(), discord, channel_id);
                         }
                     }
-                // TODO: More checking
                 } else if message.content.starts_with("!nonsense") {
                     let wisdom = &markov_chain.generate_str();
                     send_message(wisdom, discord, channel_id);
