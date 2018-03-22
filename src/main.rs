@@ -133,10 +133,6 @@ fn main() {
     loop {
         match connection.recv_event() {
             Ok(Event::MessageCreate(message)) => {
-                // This should also ignore the bot's own messages
-                if !should_notice_message(&message) {
-                    continue;
-                }
                 let channel = discord.get_channel(message.channel_id);
                 if let Ok(Channel::Group(_)) = channel {
                     send_info("I don't listen to group chats", discord,
@@ -196,7 +192,9 @@ fn main() {
                     let wisdom = &markov_chain.generate_str();
                     send_message(wisdom, discord, channel_id);
                 } else {
-                    markov_chain.feed_str(&message.content);
+                    if should_notice_message(&message) {
+                        markov_chain.feed_str(&message.content);
+                    }
                     if message.id.0 % freq == 0 && auto_post_enabled {
                         let wisdom = &markov_chain.generate_str();
                         send_message(wisdom, discord, channel_id);
