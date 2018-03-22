@@ -194,8 +194,7 @@ fn main() {
                     send_message(wisdom, discord, channel_id);
                 } else {
                     markov_chain.feed_str(&message.content);
-                    let MessageId(message_id) = message.id;
-                    if message_id % freq == 0 && auto_post_enabled {
+                    if message.id.0 % freq == 0 && auto_post_enabled {
                         let wisdom = &markov_chain.generate_str();
                         send_message(wisdom, discord, channel_id);
                     }
