@@ -1,55 +1,19 @@
 # Nonsense bot
 
-## Commands:
+## Setup
 
-`!nonsense set freq <int>`
+Run with `DISCORD_TOKEN=... DISCORD_CHANNEL_ID=... cargo run`
 
-Sets `freq`, where the bot posts after about every `freq` posts
+## Commands
 
-`!nonsense get freq`
+`!nonsense info`: Post information about the bot's state
 
-Posts `freq`
+`!nonsense here`: Move the bot to the channel this command was posted in
 
-`!nonsense set maxchars <int>`
+`!nonsense on`: Enable automatic posting
 
-Sets the maximum character count of generated messages
+`!nonsense off`: Disable automatic posting
 
-`!nonsense set savefreq <int>`
+`!nonsense freq <int>`: Set `freq`, where the bot posts after about every `freq` posts
 
-Sets `save_freq`, where the bot saves after about every `save_freq` posts
-
-`!nonsense get savefreq`
-
-Posts `save_freq`
-
-`!nonsense set maxchars <int>`
-
-Sets the maximum character count of generated messages
-
-`!nonsense get maxchars`
-
-Posts the maximum character count of generated messages
-
-`!nonsense set willping true`
-
-Enables pinging of users
-
-`!nonsense set willping false`
-
-Disables pinging of users
-
-`!nonsense get willping`
-
-Posts whether `willping` is enabled
-
-`!nonsense set channel <channel_id>`
-
-Sets the channel that the bot posts in
-
-`!nonsense save`
-
-Saves the model to `model.json`
-
-`!nonsense`
-
-Try to generate and post a message
+`!nonsense`: Generate and post a message
