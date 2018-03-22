@@ -2,7 +2,11 @@
 
 ## Setup
 
-Run with `DISCORD_TOKEN=... DISCORD_CHANNEL_ID=... cargo run`
+Install Rust. On Arch Linux, do `sudo pacman -S rust`.
+
+Run with `DISCORD_TOKEN=... DISCORD_CHANNEL_ID=... cargo run`.
+
+If the above command fails with an error about OpenSSL, run `cargo clean && OPENSSL_INCLUDE_DIR=/usr/include/openssl-1.0 OPENSSL_LIB_DIR=/usr/lib/openssl-1.0 cargo build` and run the above command again.
 
 ## Commands
 
