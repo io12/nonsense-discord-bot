@@ -79,9 +79,6 @@ fn main() {
     let (mut connection, _) = discord.connect().expect("Connection failed");
     println!("Connected");
 
-    let current_user = discord.get_current_user()
-        .expect("Failed to get current user");
-
     let mut auto_post_enabled = true;
     let mut freq = 1;
     let mut channel_id = ChannelId(
@@ -120,8 +117,8 @@ fn main() {
     println!("Populating markov chain");
     let mut markov_chain = markov::Chain::new();
     for message in messages {
-        // Ignore the bot's own messages
-        if message.author.id != current_user.id {
+        // This should also ignore the bot's own messages
+        if !message.author.bot {
             markov_chain.feed_str(&message.content);
         }
     }
@@ -130,8 +127,8 @@ fn main() {
     loop {
         match connection.recv_event() {
             Ok(Event::MessageCreate(message)) => {
-                // Ignore the bot's own messages
-                if message.author.id == current_user.id {
+                // This should also ignore the bot's own messages
+                if message.author.bot {
                     continue;
                 }
                 let channel = discord.get_channel(message.channel_id);
