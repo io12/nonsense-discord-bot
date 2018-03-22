@@ -82,7 +82,7 @@ fn main() {
     let current_user = discord.get_current_user()
         .expect("Failed to get current user");
 
-    let mut posting_enabled = true;
+    let mut auto_post_enabled = true;
     let mut freq = 1;
     let mut channel_id = ChannelId(
         env::var("DISCORD_CHANNEL_ID")
@@ -152,8 +152,8 @@ fn main() {
                     .parse::<u64>();
                 let MessageId(message_id) = message.id;
                 if message.content.starts_with("!nonsense info") {
-                    let posting_state =
-                        if posting_enabled {
+                    let auto_post_state =
+                        if auto_post_enabled {
                             "enabled"
                         } else {
                             "disabled"
@@ -163,7 +163,7 @@ fn main() {
                         \n\
                         Automatic posting is {}\n\
                         Post frequency = {}\n",
-                        posting_state, freq
+                        auto_post_state, freq
                     );
                     send_info(info, discord, channel_id);
                 } else if message.content.starts_with("!nonsense here") {
