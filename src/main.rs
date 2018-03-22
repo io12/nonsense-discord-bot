@@ -120,14 +120,17 @@ fn main() {
     println!("Populating markov chain");
     let mut markov_chain = markov::Chain::new();
     for message in messages {
-        markov_chain.feed_str(&message.content);
+        // Ignore the bot's own messages
+        if message.author.id != current_user.id {
+            markov_chain.feed_str(&message.content);
+        }
     }
 
     println!("Waiting for new messages");
     loop {
         match connection.recv_event() {
             Ok(Event::MessageCreate(message)) => {
-                // Ignores the bot's own messages
+                // Ignore the bot's own messages
                 if message.author.id == current_user.id {
                     continue;
                 }
@@ -180,8 +183,8 @@ fn main() {
                                     freq), discord, channel_id);
                         }
                         Ok(_) => {
-                            send_error("Stop trying to cause trouble :wink:",
-                                    discord, channel_id);
+                            send_error("Invalid frequency (stop trying to \
+                                cause trouble :wink:)", discord, channel_id);
                         }
                         Err(err) => {
                             send_error(err.description(), discord, channel_id);
