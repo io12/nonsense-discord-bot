@@ -133,6 +133,9 @@ fn main() {
     loop {
         match connection.recv_event() {
             Ok(Event::MessageCreate(message)) => {
+                if message.author.bot {
+                    continue;
+                }
                 let channel = discord.get_channel(message.channel_id);
                 if let Ok(Channel::Group(_)) = channel {
                     send_info("I don't listen to group chats", discord,
