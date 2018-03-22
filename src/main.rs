@@ -67,6 +67,13 @@ fn get_all_messages_in_server(server : &LiveServer, discord : &Discord)
         })
 }
 
+fn should_notice_message(message : &Message) -> bool {
+    !message.author.bot &&
+        !message.content.starts_with("/") &&
+        !message.content.starts_with("!") &&
+        !message.content.starts_with("?")
+}
+
 fn main() {
     println!("Logging in");
     let discord = &Discord::from_bot_token(
@@ -117,8 +124,7 @@ fn main() {
     println!("Populating markov chain");
     let mut markov_chain = markov::Chain::new();
     for message in messages {
-        // This should also ignore the bot's own messages
-        if !message.author.bot {
+        if should_notice_message(&message) {
             markov_chain.feed_str(&message.content);
         }
     }
@@ -128,7 +134,7 @@ fn main() {
         match connection.recv_event() {
             Ok(Event::MessageCreate(message)) => {
                 // This should also ignore the bot's own messages
-                if message.author.bot {
+                if !should_notice_message(&message) {
                     continue;
                 }
                 let channel = discord.get_channel(message.channel_id);
