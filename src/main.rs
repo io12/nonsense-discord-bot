@@ -82,7 +82,7 @@ fn main() {
     let current_user = discord.get_current_user()
         .expect("Failed to get current user");
 
-    let mut auto_post_enabled = true;
+    let mut auto_post_enabled = false;
     let mut freq = 1;
     let mut channel_id = ChannelId(
         env::var("DISCORD_CHANNEL_ID")
