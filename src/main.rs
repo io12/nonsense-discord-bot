@@ -161,7 +161,7 @@ fn main() {
                     let info = &format!(
                         "Nonsense bot information:\n\
                         \n\
-                        Posting is {}\n\
+                        Automatic posting is {}\n\
                         Post frequency = {}\n",
                         posting_state, freq
                     );
@@ -170,10 +170,10 @@ fn main() {
                     channel_id = message.channel_id;
                     send_info("Switched channels", discord, channel_id);
                 } else if message.content.starts_with("!nonsense on") {
-                    posting_enabled = true;
+                    auto_post_enabled = true;
                     send_info("Posting enabled", discord, channel_id);
                 } else if message.content.starts_with("!nonsense off") {
-                    posting_enabled = false;
+                    auto_post_enabled = false;
                     send_info("Posting disabled", discord, channel_id);
                 } else if message.content.starts_with("!nonsense freq") {
                     match third_field_val {
@@ -195,8 +195,8 @@ fn main() {
                     send_message(wisdom, discord, channel_id);
                 } else {
                     markov_chain.feed_str(&message.content);
-                    let wisdom = &markov_chain.generate_str();
-                    if message_id % freq == 0 && posting_enabled {
+                    if message_id % freq == 0 && auto_post_enabled {
+                        let wisdom = &markov_chain.generate_str();
                         send_message(wisdom, discord, channel_id);
                     }
                 }
