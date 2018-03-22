@@ -145,12 +145,6 @@ fn main() {
                         message.channel_id);
                     continue;
                 }
-                let third_field_val = message.content
-                    .split(' ')
-                    .nth(2)
-                    .unwrap_or("")
-                    .parse::<u64>();
-                let MessageId(message_id) = message.id;
                 if message.content.starts_with("!nonsense info") {
                     let auto_post_state =
                         if auto_post_enabled {
@@ -176,7 +170,12 @@ fn main() {
                     auto_post_enabled = false;
                     send_info("Posting disabled", discord, channel_id);
                 } else if message.content.starts_with("!nonsense freq") {
-                    match third_field_val {
+                    let maybe_third_field_val = message.content
+                        .split(' ')
+                        .nth(2)
+                        .unwrap_or("")
+                        .parse::<u64>();
+                    match maybe_third_field_val {
                         Ok(new_freq) if new_freq > 0 => {
                             freq = new_freq;
                             send_info(&format!("Changed post frequency to {}",
@@ -195,6 +194,7 @@ fn main() {
                     send_message(wisdom, discord, channel_id);
                 } else {
                     markov_chain.feed_str(&message.content);
+                    let MessageId(message_id) = message.id;
                     if message_id % freq == 0 && auto_post_enabled {
                         let wisdom = &markov_chain.generate_str();
                         send_message(wisdom, discord, channel_id);
