@@ -1,11 +1,16 @@
 extern crate discord;
 extern crate markov;
+extern crate regex;
+#[macro_use]
+extern crate lazy_static;
 
 use discord::model::{
     Channel, ChannelId, ChannelType, Event, LiveServer, Message, MessageId,
-    PossibleServer, PublicChannel
+    PossibleServer, PublicChannel, ServerId, UserId
 };
 use discord::{Discord, GetMessages};
+
+use regex::Regex;
 
 use std::env;
 use std::error::Error;
@@ -74,6 +79,51 @@ fn should_notice_message(message : &Message) -> bool {
         !message.content.starts_with("?")
 }
 
+fn get_state_str(state : bool) -> &'static str {
+    if state {
+        "enabled"
+    } else {
+        "disabled"
+    }
+}
+
+fn get_username(user_id : UserId, discord : &Discord, server_id : ServerId)
+                -> String {
+    match discord.get_member(server_id, user_id) {
+        Ok(member) => member.user.name,
+        Err(_) => String::from("INVALID-USERNAME")
+    }
+}
+
+fn str_to_user_id(str : &str) -> UserId {
+    UserId(str.parse().unwrap_or(0))
+}
+
+fn remove_pings(message : &str, discord : &Discord, server_id : ServerId)
+                -> String {
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r"<@(?P<user_id>\d+)>").unwrap();
+    }
+    RE.replace_all(message, |captures : &regex::Captures| {
+        let user_id = str_to_user_id(&captures[0]);
+        let username = get_username(user_id, discord, server_id);
+        format!("@{}", username)
+    }).into_owned()
+}
+
+fn send_nonsense(markov_chain : &markov::Chain<String>, discord : &Discord,
+                 server_id : ServerId, channel_id : ChannelId,
+                 pinging_enabled : bool) {
+    let nonsense_with_pings = markov_chain.generate_str();
+    let nonsense =
+        if pinging_enabled {
+            nonsense_with_pings
+        } else {
+            remove_pings(&nonsense_with_pings, discord, server_id)
+        };
+    send_message(&nonsense, discord, channel_id);
+}
+
 fn main() {
     println!("Logging in");
     let discord = &Discord::from_bot_token(
@@ -87,6 +137,7 @@ fn main() {
     println!("Connected");
 
     let mut auto_post_enabled = true;
+    let mut pinging_enabled = true;
     let mut freq = 1;
     let mut channel_id = ChannelId(
         env::var("DISCORD_CHANNEL_ID")
@@ -148,18 +199,15 @@ fn main() {
                     continue;
                 }
                 if message.content.starts_with("!nonsense info") {
-                    let auto_post_state =
-                        if auto_post_enabled {
-                            "enabled"
-                        } else {
-                            "disabled"
-                        };
                     let info = &format!(
                         "Nonsense bot information:\n\
                         \n\
                         Automatic posting is {}\n\
+                        Pinging is {}\n\
                         Post frequency = {}\n",
-                        auto_post_state, freq
+                        get_state_str(auto_post_enabled),
+                        get_state_str(pinging_enabled),
+                        freq
                     );
                     send_info(info, discord, channel_id);
                 } else if message.content.starts_with("!nonsense here") {
@@ -171,6 +219,12 @@ fn main() {
                 } else if message.content.starts_with("!nonsense off") {
                     auto_post_enabled = false;
                     send_info("Posting disabled", discord, channel_id);
+                } else if message.content.starts_with("!nonsense ping on") {
+                    pinging_enabled = true;
+                    send_info("Pinging enabled", discord, channel_id);
+                } else if message.content.starts_with("!nonsense ping off") {
+                    pinging_enabled = false;
+                    send_info("Pinging disabled", discord, channel_id);
                 } else if message.content.starts_with("!nonsense freq") {
                     let maybe_third_field_val = message.content
                         .split(' ')
@@ -192,15 +246,15 @@ fn main() {
                         }
                     }
                 } else if message.content.starts_with("!nonsense") {
-                    let wisdom = &markov_chain.generate_str();
-                    send_message(wisdom, discord, channel_id);
+                    send_nonsense(&markov_chain, discord, server.id, channel_id,
+                                  pinging_enabled);
                 } else {
                     if should_notice_message(&message) {
                         markov_chain.feed_str(&message.content);
                     }
                     if message.id.0 % freq == 0 && auto_post_enabled {
-                        let wisdom = &markov_chain.generate_str();
-                        send_message(wisdom, discord, channel_id);
+                        send_nonsense(&markov_chain, discord, server.id,
+                                      channel_id, pinging_enabled);
                     }
                 }
             }
