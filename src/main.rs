@@ -91,7 +91,7 @@ fn get_username(user_id : UserId, discord : &Discord, server_id : ServerId)
                 -> String {
     match discord.get_member(server_id, user_id) {
         Ok(member) => member.nick.unwrap_or(member.user.name),
-        Err(err) => String::from("INVALID-USERNAME")
+        Err(_) => String::from("INVALID-USERNAME")
     }
 }
 
