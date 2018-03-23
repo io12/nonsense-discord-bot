@@ -6,7 +6,7 @@ extern crate lazy_static;
 
 use discord::model::{
     Channel, ChannelId, ChannelType, Event, LiveServer, Message, MessageId,
-    PossibleServer, PublicChannel, ServerId, UserId
+    PossibleServer, PublicChannel, RoleId, ServerId, UserId
 };
 use discord::{Discord, GetMessages};
 
@@ -99,7 +99,7 @@ fn str_to_user_id(str : &str) -> UserId {
     UserId(str.parse().unwrap_or(0))
 }
 
-fn remove_pings(message : &str, discord : &Discord, server_id : ServerId)
+fn remove_user_pings(message : &str, discord : &Discord, server_id : ServerId)
                 -> String {
     lazy_static! {
         static ref RE: Regex = Regex::new(r"<@(\d+)>").unwrap();
@@ -111,15 +111,64 @@ fn remove_pings(message : &str, discord : &Discord, server_id : ServerId)
     }).into_owned()
 }
 
+fn get_role_name(role_id : RoleId, server : &LiveServer)
+                -> String {
+    let maybe_role =
+        server
+            .roles
+            .iter()
+            .find(|role| role.id == role_id);
+    match maybe_role {
+        Some(role) => role.name.clone(),
+        None => String::from("INVALID-ROLE")
+    }
+}
+
+fn str_to_role_id(str : &str) -> RoleId {
+    RoleId(str.parse().unwrap_or(0))
+}
+
+fn remove_role_pings(message : &str, server : &LiveServer) -> String {
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r"<@&(\d+)>").unwrap();
+    }
+    RE.replace_all(message, |captures : &regex::Captures| {
+        let role_id = str_to_role_id(&captures[1]);
+        let role_name = get_role_name(role_id, server);
+        format!("@{}", role_name)
+    }).into_owned()
+}
+
+fn remove_special_pings(message : &str) -> String {
+    /*
+     * Add zero-width unicode spaces to prevent pings; this may not work in the
+     * future.
+     */
+    message
+        .replace("@everyone", "@\u{200B}everyone")
+        .replace("@here", "@\u{200B}here")
+}
+
+fn remove_pings(message : &str, discord : &Discord, server : &LiveServer)
+                -> String {
+    remove_special_pings(
+        &remove_user_pings(
+            &remove_role_pings(message, server),
+            discord,
+            server.id
+        )
+    )
+}
+
 fn send_nonsense(markov_chain : &markov::Chain<String>, discord : &Discord,
-                 server_id : ServerId, channel_id : ChannelId,
+                 server : &LiveServer, channel_id : ChannelId,
                  pinging_enabled : bool) {
     let nonsense_with_pings = markov_chain.generate_str();
     let nonsense =
         if pinging_enabled {
             nonsense_with_pings
         } else {
-            remove_pings(&nonsense_with_pings, discord, server_id)
+            remove_pings(&nonsense_with_pings, discord, server)
         };
     send_message(&nonsense, discord, channel_id);
 }
@@ -246,14 +295,14 @@ fn main() {
                         }
                     }
                 } else if message.content.starts_with("!nonsense") {
-                    send_nonsense(&markov_chain, discord, server.id, channel_id,
+                    send_nonsense(&markov_chain, discord, &server, channel_id,
                                   pinging_enabled);
                 } else {
                     if should_notice_message(&message) {
                         markov_chain.feed_str(&message.content);
                     }
                     if message.id.0 % freq == 0 && auto_post_enabled {
-                        send_nonsense(&markov_chain, discord, server.id,
+                        send_nonsense(&markov_chain, discord, &server,
                                       channel_id, pinging_enabled);
                     }
                 }
