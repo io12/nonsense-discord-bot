@@ -18,6 +18,10 @@ If the above command fails with an error about OpenSSL, run `cargo clean && OPEN
 
 `!nonsense off`: Disable automatic posting
 
+`!nonsense ping on`: Enable pinging
+
+`!nonsense ping off`: Disable pinging
+
 `!nonsense freq <int>`: Set `freq`, where the bot posts after about every `freq` posts
 
 `!nonsense`: Generate and post a message

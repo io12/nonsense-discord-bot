@@ -6,3 +6,5 @@ authors = ["io12 <io12@users.noreply.github.com>"]
 [dependencies]
 discord = { git = "https://github.com/io12/discord-rs/" }
 markov = "1.0.1"
+regex = "0.2.10"
+lazy_static = "1.0.0"
