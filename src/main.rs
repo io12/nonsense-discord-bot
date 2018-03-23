@@ -90,8 +90,8 @@ fn get_state_str(state : bool) -> &'static str {
 fn get_username(user_id : UserId, discord : &Discord, server_id : ServerId)
                 -> String {
     match discord.get_member(server_id, user_id) {
-        Ok(member) => member.user.name,
-        Err(_) => String::from("INVALID-USERNAME")
+        Ok(member) => member.nick.unwrap_or(member.user.name),
+        Err(err) => String::from("INVALID-USERNAME")
     }
 }
 
@@ -102,10 +102,10 @@ fn str_to_user_id(str : &str) -> UserId {
 fn remove_pings(message : &str, discord : &Discord, server_id : ServerId)
                 -> String {
     lazy_static! {
-        static ref RE: Regex = Regex::new(r"<@(?P<user_id>\d+)>").unwrap();
+        static ref RE: Regex = Regex::new(r"<@(\d+)>").unwrap();
     }
     RE.replace_all(message, |captures : &regex::Captures| {
-        let user_id = str_to_user_id(&captures[0]);
+        let user_id = str_to_user_id(&captures[1]);
         let username = get_username(user_id, discord, server_id);
         format!("@{}", username)
     }).into_owned()
