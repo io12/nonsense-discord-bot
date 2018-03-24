@@ -29,9 +29,8 @@ fn send_error(message : &str, discord : &Discord, channel_id : ChannelId) {
     send_message(&format!("ERROR: {}", message), discord, channel_id);
 }
 
-// TODO: Make this an iterator
 fn get_all_messages_in_channel(channel : &PublicChannel, discord : &Discord)
-        -> Vec<Message> {
+                -> Vec<Message> {
     let mut all_messages = Vec::new();
     let mut msg_id;
 
@@ -60,9 +59,8 @@ fn get_all_messages_in_channel(channel : &PublicChannel, discord : &Discord)
     all_messages
 }
 
-// TODO: Make this an iterator
 fn get_all_messages_in_server(server : &LiveServer, discord : &Discord)
-        -> Vec<Message> {
+                -> Vec<Message> {
     server
         .channels
         .iter()
