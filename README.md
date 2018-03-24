@@ -1,4 +1,4 @@
-# Nonsense bot
+# Wisdom Discord bot
 
 ## Setup
 
@@ -10,18 +10,18 @@ If the above command fails with an error about OpenSSL, run `cargo clean && OPEN
 
 ## Commands
 
-`!nonsense info`: Post information about the bot's state
+`!wisdom info`: Post information about the bot's state
 
-`!nonsense here`: Move the bot to the channel this command was posted in
+`!wisdom here`: Move the bot to the channel this command was posted in
 
-`!nonsense on`: Enable automatic posting
+`!wisdom on`: Enable automatic posting
 
-`!nonsense off`: Disable automatic posting
+`!wisdom off`: Disable automatic posting
 
-`!nonsense ping on`: Enable pinging
+`!wisdom ping on`: Enable pinging
 
-`!nonsense ping off`: Disable pinging
+`!wisdom ping off`: Disable pinging
 
-`!nonsense freq <int>`: Set `freq`, where the bot posts after about every `freq` posts
+`!wisdom freq <int>`: Set `freq`, where the bot posts after about every `freq` posts
 
-`!nonsense`: Generate and post a message
+`!wisdom`: Generate and post a message
