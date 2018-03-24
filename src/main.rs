@@ -102,7 +102,7 @@ fn str_to_user_id(str : &str) -> UserId {
 fn remove_user_pings(message : &str, discord : &Discord, server_id : ServerId)
                 -> String {
     lazy_static! {
-        static ref RE: Regex = Regex::new(r"<@(\d+)>").unwrap();
+        static ref RE: Regex = Regex::new(r"<@!?(\d+)>").unwrap();
     }
     RE.replace_all(message, |captures : &regex::Captures| {
         let user_id = str_to_user_id(&captures[1]);
@@ -170,8 +170,7 @@ fn send_wisdom(markov_chain : &markov::Chain<String>, discord : &Discord,
         } else {
             remove_pings(&wisdom_with_pings, discord, server)
         };
-    let code_wisdom = format!("```\n{}\n```", wisdom);
-    send_message(&code_wisdom, discord, channel_id);
+    send_message(&wisdom, discord, channel_id);
 }
 
 fn main() {
