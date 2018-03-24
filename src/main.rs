@@ -8,7 +8,7 @@ use discord::model::{
     Channel, ChannelId, ChannelType, Event, LiveServer, Message, MessageId,
     PossibleServer, PublicChannel, RoleId, ServerId, UserId
 };
-use discord::{Discord, GetMessages};
+use discord::{Connection, Discord, GetMessages};
 
 use regex::Regex;
 
@@ -29,6 +29,7 @@ fn send_error(message : &str, discord : &Discord, channel_id : ChannelId) {
     send_message(&format!("ERROR: {}", message), discord, channel_id);
 }
 
+// TODO: Make this an iterator
 fn get_all_messages_in_channel(channel : &PublicChannel, discord : &Discord)
         -> Vec<Message> {
     let mut all_messages = Vec::new();
@@ -59,6 +60,7 @@ fn get_all_messages_in_channel(channel : &PublicChannel, discord : &Discord)
     all_messages
 }
 
+// TODO: Make this an iterator
 fn get_all_messages_in_server(server : &LiveServer, discord : &Discord)
         -> Vec<Message> {
     server
@@ -72,7 +74,7 @@ fn get_all_messages_in_server(server : &LiveServer, discord : &Discord)
         })
 }
 
-fn should_notice_message(message : &Message) -> bool {
+fn is_convo_message(message : &Message) -> bool {
     !message.author.bot &&
         !message.content.starts_with("/") &&
         !message.content.starts_with("!") &&
@@ -173,13 +175,55 @@ fn send_nonsense(markov_chain : &markov::Chain<String>, discord : &Discord,
     send_message(&nonsense, discord, channel_id);
 }
 
+fn get_token() -> String {
+    env::var("DISCORD_TOKEN")
+        .expect("No Discord client token; Run this bot with the DISCORD_TOKEN \
+                environment variable set")
+}
+
+fn get_default_channel_id() -> ChannelId {
+    ChannelId(
+        env::var("DISCORD_CHANNEL_ID")
+            .expect("No default channel; Run this bot with the 
+                    DISCORD_CHANNEL_ID environment variable set")
+            .parse()
+            .expect("Invalid channel ID")
+    )
+}
+
+fn login() -> Discord {
+    Discord::from_bot_token(&get_token())
+        .expect("Login failed")
+}
+
+fn lookup_public_channel(channel_id : ChannelId, discord : &Discord)
+                -> PublicChannel {
+    match discord.get_channel(channel_id) {
+        Ok(Channel::Public(channel)) => channel,
+        Ok(_) => panic!("Channel is either a DM or a group chat; It should be \
+                a server"),
+        Err(_) => panic!("Invalid channel ID")
+    }
+}
+
+fn lookup_server(server_id : ServerId, connection : &mut Connection)
+                -> LiveServer {
+    loop {
+        match connection.recv_event() {
+            Ok(Event::ServerCreate(PossibleServer::Online(server))) => {
+                if server.id == server_id {
+                    return server;
+                }
+            }
+            Ok(_) => {}
+            Err(err) => panic!("Received error: {:?}", err)
+        }
+    }
+}
+
 fn main() {
     println!("Logging in");
-    let discord = &Discord::from_bot_token(
-        &env::var("DISCORD_TOKEN")
-        .expect("No Discord client token; Run this bot with the \
-                DISCORD_TOKEN environment variable set"),
-    ).expect("Login failed");
+    let discord = login();
 
     println!("Connecting bot");
     let (mut connection, _) = discord.connect().expect("Connection failed");
@@ -188,45 +232,27 @@ fn main() {
     let mut auto_post_enabled = true;
     let mut pinging_enabled = true;
     let mut freq = 1;
-    let mut channel_id = ChannelId(
-        env::var("DISCORD_CHANNEL_ID")
-        .expect("No default channel; Run this bot with the DISCORD_CHANNEL_ID \
-                environment variable set")
-        .parse()
-        .expect("Invalid channel ID")
-    );
-    let default_channel = match discord.get_channel(channel_id) {
-        Ok(Channel::Public(channel)) => channel,
-        Ok(_) => panic!("Channel is either a DM or a group chat; It should be \
-            a server"),
-        Err(_) => panic!("Invalid channel ID")
-    };
+    let mut channel_id = get_default_channel_id();
+    let default_channel = lookup_public_channel(channel_id, &discord);
 
     println!("Looking up Discord server");
-    let server;
-    loop {
-        match connection.recv_event() {
-            Ok(Event::ServerCreate(PossibleServer::Online(srv))) => {
-                if srv.id == default_channel.server_id {
-                    server = srv;
-                    println!("Found server");
-                    break;
-                }
-            }
-            Ok(_) => {}
-            Err(err) => panic!("Received error: {:?}", err)
-        }
-    }
+    let server = lookup_server(default_channel.server_id, &mut connection);
 
     println!("Retrieving server messages");
     let messages = get_all_messages_in_server(&server, &discord);
+    let convo_messages : Vec<&Message> =
+        messages
+            .iter()
+            .filter(|message| is_convo_message(&message))
+            .collect();
+    if convo_messages.len() == 0 {
+        panic!("Server has no conversation messages");
+    }
 
     println!("Populating markov chain");
     let mut markov_chain = markov::Chain::new();
-    for message in messages {
-        if should_notice_message(&message) {
-            markov_chain.feed_str(&message.content);
-        }
+    for message in convo_messages {
+        markov_chain.feed_str(&message.content);
     }
 
     println!("Waiting for new messages");
@@ -238,12 +264,12 @@ fn main() {
                 }
                 let channel = discord.get_channel(message.channel_id);
                 if let Ok(Channel::Group(_)) = channel {
-                    send_info("I don't listen to group chats", discord,
+                    send_info("I don't listen to group chats", &discord,
                         message.channel_id);
                     continue;
                 }
                 if let Ok(Channel::Private(_)) = channel {
-                    send_info("I don't listen to DMs", discord,
+                    send_info("I don't listen to DMs", &discord,
                         message.channel_id);
                     continue;
                 }
@@ -258,22 +284,22 @@ fn main() {
                         get_state_str(pinging_enabled),
                         freq
                     );
-                    send_info(info, discord, channel_id);
+                    send_info(info, &discord, channel_id);
                 } else if message.content.starts_with("!nonsense here") {
                     channel_id = message.channel_id;
-                    send_info("Switched channels", discord, channel_id);
+                    send_info("Switched channels", &discord, channel_id);
                 } else if message.content.starts_with("!nonsense on") {
                     auto_post_enabled = true;
-                    send_info("Posting enabled", discord, channel_id);
+                    send_info("Posting enabled", &discord, channel_id);
                 } else if message.content.starts_with("!nonsense off") {
                     auto_post_enabled = false;
-                    send_info("Posting disabled", discord, channel_id);
+                    send_info("Posting disabled", &discord, channel_id);
                 } else if message.content.starts_with("!nonsense ping on") {
                     pinging_enabled = true;
-                    send_info("Pinging enabled", discord, channel_id);
+                    send_info("Pinging enabled", &discord, channel_id);
                 } else if message.content.starts_with("!nonsense ping off") {
                     pinging_enabled = false;
-                    send_info("Pinging disabled", discord, channel_id);
+                    send_info("Pinging disabled", &discord, channel_id);
                 } else if message.content.starts_with("!nonsense freq") {
                     let maybe_third_field_val = message.content
                         .split(' ')
@@ -284,25 +310,25 @@ fn main() {
                         Ok(new_freq) if new_freq > 0 => {
                             freq = new_freq;
                             send_info(&format!("Changed post frequency to {}",
-                                    freq), discord, channel_id);
+                                    freq), &discord, channel_id);
                         }
                         Ok(_) => {
                             send_error("Invalid frequency (stop trying to \
-                                cause trouble :wink:)", discord, channel_id);
+                                cause trouble :wink:)", &discord, channel_id);
                         }
                         Err(err) => {
-                            send_error(err.description(), discord, channel_id);
+                            send_error(err.description(), &discord, channel_id);
                         }
                     }
                 } else if message.content.starts_with("!nonsense") {
-                    send_nonsense(&markov_chain, discord, &server, channel_id,
+                    send_nonsense(&markov_chain, &discord, &server, channel_id,
                                   pinging_enabled);
                 } else {
-                    if should_notice_message(&message) {
+                    if is_convo_message(&message) {
                         markov_chain.feed_str(&message.content);
                     }
                     if message.id.0 % freq == 0 && auto_post_enabled {
-                        send_nonsense(&markov_chain, discord, &server,
+                        send_nonsense(&markov_chain, &discord, &server,
                                       channel_id, pinging_enabled);
                     }
                 }
