@@ -15,6 +15,13 @@ use regex::Regex;
 use std::env;
 use std::error::Error;
 
+struct Config {
+    auto_post_enabled: bool,
+    pinging_enabled: bool,
+    freq: u64,
+    channel_id: ChannelId,
+}
+
 fn send_message(message : &str, discord : &Discord, channel_id : ChannelId) {
     if let Err(err) = discord.send_message(channel_id, message, "", false) {
         println!("ERROR: {}", err.description());
@@ -227,11 +234,14 @@ fn main() {
     let (mut connection, _) = discord.connect().expect("Connection failed");
     println!("Connected");
 
-    let mut auto_post_enabled = true;
-    let mut pinging_enabled = true;
-    let mut freq = 1;
-    let mut channel_id = get_default_channel_id();
-    let default_channel = lookup_public_channel(channel_id, &discord);
+    let mut config =
+        Config {
+            auto_post_enabled: true,
+            pinging_enabled: true,
+            freq: 1,
+            channel_id: get_default_channel_id(),
+        };
+    let default_channel = lookup_public_channel(config.channel_id, &discord);
 
     println!("Looking up Discord server");
     let server = lookup_server(default_channel.server_id, &mut connection);
@@ -278,26 +288,26 @@ fn main() {
                         Automatic posting is {}\n\
                         Pinging is {}\n\
                         Post frequency = {}\n",
-                        get_state_str(auto_post_enabled),
-                        get_state_str(pinging_enabled),
-                        freq
+                        get_state_str(config.auto_post_enabled),
+                        get_state_str(config.pinging_enabled),
+                        config.freq
                     );
-                    send_info(info, &discord, channel_id);
+                    send_info(info, &discord, config.channel_id);
                 } else if message.content.starts_with("!nonsense here") {
-                    channel_id = message.channel_id;
-                    send_info("Switched channels", &discord, channel_id);
+                    config.channel_id = message.channel_id;
+                    send_info("Switched channels", &discord, config.channel_id);
                 } else if message.content.starts_with("!nonsense on") {
-                    auto_post_enabled = true;
-                    send_info("Posting enabled", &discord, channel_id);
+                    config.auto_post_enabled = true;
+                    send_info("Posting enabled", &discord, config.channel_id);
                 } else if message.content.starts_with("!nonsense off") {
-                    auto_post_enabled = false;
-                    send_info("Posting disabled", &discord, channel_id);
+                    config.auto_post_enabled = false;
+                    send_info("Posting disabled", &discord, config.channel_id);
                 } else if message.content.starts_with("!nonsense ping on") {
-                    pinging_enabled = true;
-                    send_info("Pinging enabled", &discord, channel_id);
+                    config.pinging_enabled = true;
+                    send_info("Pinging enabled", &discord, config.channel_id);
                 } else if message.content.starts_with("!nonsense ping off") {
-                    pinging_enabled = false;
-                    send_info("Pinging disabled", &discord, channel_id);
+                    config.pinging_enabled = false;
+                    send_info("Pinging disabled", &discord, config.channel_id);
                 } else if message.content.starts_with("!nonsense freq") {
                     let maybe_third_field_val = message.content
                         .split(' ')
@@ -306,28 +316,29 @@ fn main() {
                         .parse::<u64>();
                     match maybe_third_field_val {
                         Ok(new_freq) if new_freq > 0 => {
-                            freq = new_freq;
+                            config.freq = new_freq;
                             send_info(&format!("Changed post frequency to {}",
-                                    freq), &discord, channel_id);
+                                    config.freq), &discord, config.channel_id);
                         }
                         Ok(_) => {
                             send_error("Invalid frequency (stop trying to \
-                                cause trouble :wink:)", &discord, channel_id);
+                                cause trouble :wink:)", &discord, config.channel_id);
                         }
                         Err(err) => {
-                            send_error(err.description(), &discord, channel_id);
+                            send_error(err.description(), &discord, config.channel_id);
                         }
                     }
                 } else if message.content.starts_with("!nonsense") {
-                    send_nonsense(&markov_chain, &discord, &server, channel_id,
-                                  pinging_enabled);
+                    send_nonsense(&markov_chain, &discord, &server, config.channel_id,
+                                  config.pinging_enabled);
                 } else {
                     if is_convo_message(&message) {
                         markov_chain.feed_str(&message.content);
                     }
-                    if message.id.0 % freq == 0 && auto_post_enabled {
+                    if message.id.0 % config.freq == 0 &&
+                            config.auto_post_enabled {
                         send_nonsense(&markov_chain, &discord, &server,
-                                      channel_id, pinging_enabled);
+                                      config.channel_id, config.pinging_enabled);
                     }
                 }
             }
