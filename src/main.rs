@@ -170,7 +170,8 @@ fn send_wisdom(markov_chain : &markov::Chain<String>, discord : &Discord,
         } else {
             remove_pings(&wisdom_with_pings, discord, server)
         };
-    send_message(&wisdom, discord, channel_id);
+    let code_wisdom = format!("```\n{}\n```", wisdom);
+    send_message(&code_wisdom, discord, channel_id);
 }
 
 fn main() {
