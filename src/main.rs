@@ -160,17 +160,17 @@ fn remove_pings(message : &str, discord : &Discord, server : &LiveServer)
     )
 }
 
-fn send_wisdom(markov_chain : &markov::Chain<String>, discord : &Discord,
+fn send_nonsense(markov_chain : &markov::Chain<String>, discord : &Discord,
                  server : &LiveServer, channel_id : ChannelId,
                  pinging_enabled : bool) {
-    let wisdom_with_pings = markov_chain.generate_str();
-    let wisdom =
+    let nonsense_with_pings = markov_chain.generate_str();
+    let nonsense =
         if pinging_enabled {
-            wisdom_with_pings
+            nonsense_with_pings
         } else {
-            remove_pings(&wisdom_with_pings, discord, server)
+            remove_pings(&nonsense_with_pings, discord, server)
         };
-    send_message(&wisdom, discord, channel_id);
+    send_message(&nonsense, discord, channel_id);
 }
 
 fn main() {
@@ -247,7 +247,7 @@ fn main() {
                         message.channel_id);
                     continue;
                 }
-                if message.content.starts_with("!wisdom info") {
+                if message.content.starts_with("!nonsense info") {
                     let info = &format!(
                         "Nonsense bot information:\n\
                         \n\
@@ -259,22 +259,22 @@ fn main() {
                         freq
                     );
                     send_info(info, discord, channel_id);
-                } else if message.content.starts_with("!wisdom here") {
+                } else if message.content.starts_with("!nonsense here") {
                     channel_id = message.channel_id;
                     send_info("Switched channels", discord, channel_id);
-                } else if message.content.starts_with("!wisdom on") {
+                } else if message.content.starts_with("!nonsense on") {
                     auto_post_enabled = true;
                     send_info("Posting enabled", discord, channel_id);
-                } else if message.content.starts_with("!wisdom off") {
+                } else if message.content.starts_with("!nonsense off") {
                     auto_post_enabled = false;
                     send_info("Posting disabled", discord, channel_id);
-                } else if message.content.starts_with("!wisdom ping on") {
+                } else if message.content.starts_with("!nonsense ping on") {
                     pinging_enabled = true;
                     send_info("Pinging enabled", discord, channel_id);
-                } else if message.content.starts_with("!wisdom ping off") {
+                } else if message.content.starts_with("!nonsense ping off") {
                     pinging_enabled = false;
                     send_info("Pinging disabled", discord, channel_id);
-                } else if message.content.starts_with("!wisdom freq") {
+                } else if message.content.starts_with("!nonsense freq") {
                     let maybe_third_field_val = message.content
                         .split(' ')
                         .nth(2)
@@ -294,15 +294,15 @@ fn main() {
                             send_error(err.description(), discord, channel_id);
                         }
                     }
-                } else if message.content.starts_with("!wisdom") {
-                    send_wisdom(&markov_chain, discord, &server, channel_id,
+                } else if message.content.starts_with("!nonsense") {
+                    send_nonsense(&markov_chain, discord, &server, channel_id,
                                   pinging_enabled);
                 } else {
                     if should_notice_message(&message) {
                         markov_chain.feed_str(&message.content);
                     }
                     if message.id.0 % freq == 0 && auto_post_enabled {
-                        send_wisdom(&markov_chain, discord, &server,
+                        send_nonsense(&markov_chain, discord, &server,
                                       channel_id, pinging_enabled);
                     }
                 }
