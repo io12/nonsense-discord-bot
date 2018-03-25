@@ -34,7 +34,7 @@ fn send_error(message: &str, discord: &Discord, channel_id: ChannelId) {
     send_message(&format!("ERROR: {}", message), discord, channel_id);
 }
 
-fn get_all_messages_in_channel(channel: &PublicChannel, discord: &Discord) -> Vec<Message> {
+fn get_messages_in_channel(channel: &PublicChannel, discord: &Discord) -> Vec<Message> {
     let mut all_messages = Vec::new();
     let mut msg_id;
 
@@ -63,12 +63,12 @@ fn get_all_messages_in_channel(channel: &PublicChannel, discord: &Discord) -> Ve
     all_messages
 }
 
-fn get_all_messages_in_server(server: &LiveServer, discord: &Discord) -> Vec<Message> {
+fn get_messages_in_server(server: &LiveServer, discord: &Discord) -> Vec<Message> {
     server
         .channels
         .iter()
         .filter(|channel| channel.kind == ChannelType::Text)
-        .map(|channel| get_all_messages_in_channel(channel, discord))
+        .map(|channel| get_messages_in_channel(channel, discord))
         .fold(vec![], |mut vec1, vec2| {
             vec1.extend(vec2);
             vec1
@@ -235,7 +235,7 @@ fn main() {
     let server = lookup_server(default_channel.server_id, &mut connection);
 
     println!("Retrieving server messages");
-    let messages = get_all_messages_in_server(&server, &discord);
+    let messages = get_messages_in_server(&server, &discord);
     let convo_messages: Vec<&Message> = messages
         .iter()
         .filter(|message| is_convo_message(&message))
