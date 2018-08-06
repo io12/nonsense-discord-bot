@@ -139,6 +139,7 @@ fn remove_special_pings(message: &str) -> String {
      * future.
      */
     message
+        .replace("@someone", "@\u{200B}someone")
         .replace("@everyone", "@\u{200B}everyone")
         .replace("@here", "@\u{200B}here")
 }
