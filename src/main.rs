@@ -352,7 +352,7 @@ fn main() {
             Err(discord::Error::Closed(code, body)) => {
                 panic!("Gateway closed on us with code {:?}: {}", code, body)
             }
-            Err(err) => panic!("Received error: {:?}", err),
+            Err(err) => println!("ERROR: {}", err.description()),
         }
     }
 }
