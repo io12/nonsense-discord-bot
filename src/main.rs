@@ -271,7 +271,23 @@ fn main() {
                     send_info("I don't listen to DMs", &discord, message.channel_id);
                     continue;
                 }
-                if message.content.starts_with("!nonsense info") {
+                if message.content.starts_with("!nonsense help") {
+                    let help =
+                        "Nonsense bot help:\n\
+                         \n\
+                         `!nonsense help`: List all commands (show this list)\n\
+                         `!nonsense info`: Post information about the bot's state\n\
+                         `!nonsense here`: Move the bot to the channel this command was posted in\n\
+                         `!nonsense on`: Enable automatic posting\n\
+                         `!nonsense off`: Disable automatic posting\n\
+                         `!nonsense ping on`: Enable pinging\n\
+                         `!nonsense ping off`: Disable pinging\n\
+                         `!nonsense freq <int>`: Set `freq`, where the bot posts after about every `freq` posts\n\
+                         `!nonsense`: Generate and post a message";
+                    send_info(help, &discord, config.channel_id);
+
+
+                } else if message.content.starts_with("!nonsense info") {
                     let info = &format!(
                         "Nonsense bot information:\n\
                          \n\

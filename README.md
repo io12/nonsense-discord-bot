@@ -10,6 +10,8 @@ If the above command fails with an error about OpenSSL, run `cargo clean && OPEN
 
 ## Commands
 
+`!nonsense help`: List all commands (show this list)
+
 `!nonsense info`: Post information about the bot's state
 
 `!nonsense here`: Move the bot to the channel this command was posted in
