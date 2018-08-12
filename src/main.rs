@@ -57,7 +57,7 @@ fn get_messages_in_channel(channel: &PublicChannel, discord: &Discord) -> Vec<Me
                 all_messages.extend(messages);
                 msg_id = all_messages.last().unwrap().id;
             }
-            Err(_) => panic!("Error getting messages"),
+            Err(err) => println!("ERROR: {}", err.description()),
         }
     }
     all_messages
