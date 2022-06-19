@@ -2,11 +2,9 @@
 
 ## Setup
 
-Install Rust. On Arch Linux, do `sudo pacman -S rust`.
+Install [Rust](https://rustup.rs/).
 
-Run with `DISCORD_TOKEN=... DISCORD_CHANNEL_ID=... cargo run`.
-
-If the above command fails with an error about OpenSSL, run `cargo clean && OPENSSL_INCLUDE_DIR=/usr/include/openssl-1.0 OPENSSL_LIB_DIR=/usr/lib/openssl-1.0 cargo build` and run the above command again.
+Run with `NONSENSE_TOKEN=... NONSENSE_PREFIX="!nonsense " cargo run`.
 
 ## Commands
 
@@ -14,16 +12,12 @@ If the above command fails with an error about OpenSSL, run `cargo clean && OPEN
 
 `!nonsense info`: Post information about the bot's state
 
-`!nonsense here`: Move the bot to the channel this command was posted in
-
 `!nonsense on`: Enable automatic posting
 
 `!nonsense off`: Disable automatic posting
 
-`!nonsense ping on`: Enable pinging
+`!nonsense ping_on`: Enable pinging
 
-`!nonsense ping off`: Disable pinging
+`!nonsense ping_off`: Disable pinging
 
 `!nonsense freq <int>`: Set `freq`, where the bot posts after about every `freq` posts
-
-`!nonsense`: Generate and post a message
