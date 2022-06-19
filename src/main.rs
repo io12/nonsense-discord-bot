@@ -4,8 +4,10 @@ extern crate lazy_static;
 extern crate markov;
 extern crate regex;
 
-use discord::model::{Channel, ChannelId, ChannelType, Event, LiveServer, Message, MessageId,
-                     PossibleServer, PublicChannel, RoleId, ServerId, UserId};
+use discord::model::{
+    Channel, ChannelId, ChannelType, Event, LiveServer, Message, MessageId, PossibleServer,
+    PublicChannel, RoleId, ServerId, UserId,
+};
 use discord::{Connection, Discord, GetMessages};
 
 use regex::Regex;
@@ -76,7 +78,9 @@ fn get_messages_in_server(server: &LiveServer, discord: &Discord) -> Vec<Message
 }
 
 fn is_convo_message(message: &Message) -> bool {
-    !message.author.bot && !message.content.starts_with("/") && !message.content.starts_with("!")
+    !message.author.bot
+        && !message.content.starts_with("/")
+        && !message.content.starts_with("!")
         && !message.content.starts_with("?")
 }
 
@@ -107,7 +111,8 @@ fn remove_user_pings(message: &str, discord: &Discord, server_id: ServerId) -> S
         let user_id = str_to_user_id(&captures[1]);
         let username = get_username(user_id, discord, server_id);
         format!("@{}", username)
-    }).into_owned()
+    })
+    .into_owned()
 }
 
 fn get_role_name(role_id: RoleId, server: &LiveServer) -> String {
@@ -130,7 +135,8 @@ fn remove_role_pings(message: &str, server: &LiveServer) -> String {
         let role_id = str_to_role_id(&captures[1]);
         let role_name = get_role_name(role_id, server);
         format!("@{}", role_name)
-    }).into_owned()
+    })
+    .into_owned()
 }
 
 fn remove_special_pings(message: &str) -> String {
@@ -285,8 +291,6 @@ fn main() {
                          `!nonsense freq <int>`: Set `freq`, where the bot posts after about every `freq` posts\n\
                          `!nonsense`: Generate and post a message";
                     send_info(help, &discord, config.channel_id);
-
-
                 } else if message.content.starts_with("!nonsense info") {
                     let info = &format!(
                         "Nonsense bot information:\n\
