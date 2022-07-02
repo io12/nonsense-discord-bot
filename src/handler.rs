@@ -98,7 +98,7 @@ impl EventHandler for Handler {
             let state = get_state(&data).await;
             let guilds = state.guilds.read().await;
             let guild_lock = &guilds[&guild_id];
-            let config = guild_lock.read().await.config;
+            let config = &guild_lock.read().await.config;
             guild_lock.write().await.markov_chain.feed_str(&msg.content);
             if matches!(msg.mentions_me(http).await, Ok(true))
                 || (msg.id.0 % config.freq == 0 && config.auto_post_enabled)

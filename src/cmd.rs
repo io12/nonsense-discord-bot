@@ -43,7 +43,7 @@ async fn info(ctx: &Context, msg: &Message) -> CommandResult {
     let state = get_state(&data).await;
     let guilds = state.guilds.read().await;
     let username = ctx.http.get_current_user().await?.name;
-    let config = guilds[&guild_id].read().await.config;
+    let config = &guilds[&guild_id].read().await.config;
     msg.channel_id
         .send_message(&ctx.http, |m| {
             m.embed(|e| {
@@ -136,9 +136,8 @@ async fn freq(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     let data = ctx.data.read().await;
     let state = get_state(&data).await;
     let guilds = state.guilds.read().await;
-    let mut config = guilds[&guild_id].write().await.config;
-    config.freq = new_freq;
-    let response = format!("Changed post frequency to {}", config.freq);
+    guilds[&guild_id].write().await.config.freq = new_freq;
+    let response = format!("Changed post frequency to {new_freq}");
     msg.channel_id
         .send_message(&ctx.http, |m| m.embed(|e| e.description(response)))
         .await?;
