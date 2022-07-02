@@ -3,9 +3,11 @@ mod config;
 mod handler;
 mod state;
 
+use state::GuildState;
 use state::State;
 
 use std::collections::HashMap;
+use std::sync::Arc;
 
 #[macro_use]
 extern crate lazy_static;
@@ -113,10 +115,8 @@ async fn remove_pings(message: &str, http: &Http, guild_id: GuildId) -> String {
 
 async fn send_nonsense(ctx: &Context, channel_id: ChannelId, guild_id: GuildId) -> Result<()> {
     let http = &ctx.http;
-    let data = ctx.data.read().await;
-    let state = get_state(&data).await;
-    let guilds = state.guilds.read().await;
-    let guild_state = &guilds[&guild_id].read().await;
+    let guild_state = get_guild_state(ctx, guild_id).await;
+    let guild_state = guild_state.read().await;
     let markov_chain = &guild_state.markov_chain;
     if markov_chain.is_empty() {
         return Ok(());
@@ -157,6 +157,37 @@ async fn after_command_hook(ctx: &Context, msg: &Message, _cmd: &str, res: Comma
     }
 }
 
+fn is_convo_message(message: &Message) -> bool {
+    !message.author.bot
+        && !message.content.starts_with('/')
+        && !message.content.starts_with('!')
+        && !message.content.starts_with('?')
+}
+
+#[hook]
+async fn normal_message_hook(ctx: &Context, msg: &Message) {
+    let guild_id = if let Some(guild_id) = msg.guild_id {
+        guild_id
+    } else {
+        return;
+    };
+    if is_convo_message(msg) {
+        let data = ctx.data.read().await;
+        let state = get_state(&data);
+        let guilds = state.guilds.read().await;
+        let guild_lock = &guilds[&guild_id];
+        let config = guild_lock.read().await.config;
+        {
+            guild_lock.write().await.markov_chain.feed_str(&msg.content);
+        }
+        if matches!(msg.mentions_me(&ctx.http).await, Ok(true))
+            || (msg.id.0 % config.freq == 0 && config.auto_post_enabled)
+        {
+            let _ = crate::send_nonsense(ctx, msg.channel_id, guild_id).await;
+        }
+    }
+}
+
 #[hook]
 async fn unrecognised_command_hook(ctx: &Context, msg: &Message, cmd: &str) {
     send_error(
@@ -167,8 +198,15 @@ async fn unrecognised_command_hook(ctx: &Context, msg: &Message, cmd: &str) {
     .await;
 }
 
-async fn get_state(data: &TypeMap) -> &State {
+fn get_state(data: &TypeMap) -> &State {
     data.get::<State>().expect("No state in context")
+}
+
+async fn get_guild_state(ctx: &Context, guild_id: GuildId) -> Arc<RwLock<GuildState>> {
+    let data = ctx.data.read().await;
+    let state = get_state(&data);
+    let guilds = state.guilds.read().await;
+    Arc::clone(&guilds[&guild_id])
 }
 
 async fn create_client(token: &str, prefix: &str) -> Result<Client> {
@@ -178,6 +216,7 @@ async fn create_client(token: &str, prefix: &str) -> Result<Client> {
         .help(&cmd::HELP)
         .before(before_command_hook)
         .after(after_command_hook)
+        .normal_message(normal_message_hook)
         .unrecognised_command(unrecognised_command_hook);
     Client::builder(token, GatewayIntents::all())
         .event_handler(handler::Handler)

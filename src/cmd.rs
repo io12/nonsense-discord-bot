@@ -1,4 +1,4 @@
-use crate::get_state;
+use crate::get_guild_state;
 
 use std::collections::HashSet;
 
@@ -39,16 +39,14 @@ async fn help(
 #[only_in(guilds)]
 async fn info(ctx: &Context, msg: &Message) -> CommandResult {
     let guild_id = msg.guild_id.unwrap();
-    let data = ctx.data.read().await;
-    let state = get_state(&data).await;
-    let guilds = state.guilds.read().await;
     let username = ctx.http.get_current_user().await?.name;
-    let config = &guilds[&guild_id].read().await.config;
+    let guild_state_lock = get_guild_state(ctx, guild_id).await;
+    let guild_state = guild_state_lock.read().await;
     msg.channel_id
         .send_message(&ctx.http, |m| {
             m.embed(|e| {
                 e.title(format!("{username} information"))
-                    .description(config)
+                    .description(guild_state.config)
             })
         })
         .await?;
@@ -61,10 +59,9 @@ async fn info(ctx: &Context, msg: &Message) -> CommandResult {
 #[required_permissions(ADMINISTRATOR)]
 async fn on(ctx: &Context, msg: &Message) -> CommandResult {
     let guild_id = msg.guild_id.unwrap();
-    let data = ctx.data.read().await;
-    let state = get_state(&data).await;
-    let guilds = state.guilds.read().await;
-    guilds[&guild_id].write().await.config.auto_post_enabled = true;
+    let guild_state_lock = get_guild_state(ctx, guild_id).await;
+    let mut guild_state = guild_state_lock.write().await;
+    guild_state.config.auto_post_enabled = true;
     msg.channel_id
         .send_message(&ctx.http, |m| m.embed(|e| e.description("Posting enabled")))
         .await?;
@@ -77,10 +74,9 @@ async fn on(ctx: &Context, msg: &Message) -> CommandResult {
 #[required_permissions(ADMINISTRATOR)]
 async fn off(ctx: &Context, msg: &Message) -> CommandResult {
     let guild_id = msg.guild_id.unwrap();
-    let data = ctx.data.read().await;
-    let state = get_state(&data).await;
-    let guilds = state.guilds.read().await;
-    guilds[&guild_id].write().await.config.auto_post_enabled = false;
+    let guild_state_lock = get_guild_state(ctx, guild_id).await;
+    let mut guild_state = guild_state_lock.write().await;
+    guild_state.config.auto_post_enabled = false;
     msg.channel_id
         .send_message(&ctx.http, |m| {
             m.embed(|e| e.description("Posting disabled"))
@@ -95,10 +91,9 @@ async fn off(ctx: &Context, msg: &Message) -> CommandResult {
 #[required_permissions(ADMINISTRATOR)]
 async fn ping_on(ctx: &Context, msg: &Message) -> CommandResult {
     let guild_id = msg.guild_id.unwrap();
-    let data = ctx.data.read().await;
-    let state = get_state(&data).await;
-    let guilds = state.guilds.read().await;
-    guilds[&guild_id].write().await.config.pinging_enabled = true;
+    let guild_state_lock = get_guild_state(ctx, guild_id).await;
+    let mut guild_state = guild_state_lock.write().await;
+    guild_state.config.pinging_enabled = true;
     msg.channel_id
         .send_message(&ctx.http, |m| m.embed(|e| e.description("Pinging enabled")))
         .await?;
@@ -111,10 +106,9 @@ async fn ping_on(ctx: &Context, msg: &Message) -> CommandResult {
 #[required_permissions(ADMINISTRATOR)]
 async fn ping_off(ctx: &Context, msg: &Message) -> CommandResult {
     let guild_id = msg.guild_id.unwrap();
-    let data = ctx.data.write().await;
-    let state = get_state(&data).await;
-    let guilds = state.guilds.read().await;
-    guilds[&guild_id].write().await.config.pinging_enabled = false;
+    let guild_state_lock = get_guild_state(ctx, guild_id).await;
+    let mut guild_state = guild_state_lock.write().await;
+    guild_state.config.pinging_enabled = false;
     msg.channel_id
         .send_message(&ctx.http, |m| {
             m.embed(|e| e.description("Pinging disabled"))
@@ -133,10 +127,9 @@ async fn freq(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     if new_freq == 0 {
         return Err("Zero is not a valid frequency".into());
     }
-    let data = ctx.data.read().await;
-    let state = get_state(&data).await;
-    let guilds = state.guilds.read().await;
-    guilds[&guild_id].write().await.config.freq = new_freq;
+    let guild_state_lock = get_guild_state(ctx, guild_id).await;
+    let mut guild_state = guild_state_lock.write().await;
+    guild_state.config.freq = new_freq;
     let response = format!("Changed post frequency to {new_freq}");
     msg.channel_id
         .send_message(&ctx.http, |m| m.embed(|e| e.description(response)))

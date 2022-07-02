@@ -1,5 +1,6 @@
 use std::fmt;
 
+#[derive(Copy, Clone)]
 pub struct Config {
     pub auto_post_enabled: bool,
     pub pinging_enabled: bool,

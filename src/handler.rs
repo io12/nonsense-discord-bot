@@ -1,4 +1,5 @@
 use crate::get_state;
+use crate::is_convo_message;
 
 use std::sync::Arc;
 
@@ -9,13 +10,6 @@ use serenity::http::Http;
 use serenity::model::channel::Message;
 use serenity::model::prelude::*;
 use serenity::prelude::*;
-
-fn is_convo_message(message: &Message) -> bool {
-    !message.author.bot
-        && !message.content.starts_with('/')
-        && !message.content.starts_with('!')
-        && !message.content.starts_with('?')
-}
 
 async fn get_messages_in_guild(guild: &Guild, http: &Http) -> Vec<Message> {
     let messages = stream::iter(
@@ -64,7 +58,7 @@ impl EventHandler for Handler {
     async fn guild_create(&self, ctx: Context, guild: Guild, _: bool) {
         let http = &ctx.http;
         let data = ctx.data.read().await;
-        let state = get_state(&data).await;
+        let state = get_state(&data);
         let guild_state = {
             let mut guilds = state.guilds.write().await;
             Arc::clone(guilds.entry(guild.id).or_default())
@@ -76,35 +70,5 @@ impl EventHandler for Handler {
         }
 
         println!("Waiting for new messages in {}...", guild.id);
-    }
-
-    async fn message(&self, ctx: Context, msg: Message) {
-        if msg.author.bot {
-            return;
-        }
-        let guild_id = if let Some(guild_id) = msg.guild_id {
-            guild_id
-        } else {
-            return;
-        };
-        let http = &ctx.http;
-        let channel = msg.channel(http).await;
-        if let Ok(Channel::Private(_)) = channel {
-            let _ = msg.reply(http, "I don't listen to DMs").await;
-            return;
-        };
-        if is_convo_message(&msg) {
-            let data = ctx.data.read().await;
-            let state = get_state(&data).await;
-            let guilds = state.guilds.read().await;
-            let guild_lock = &guilds[&guild_id];
-            let config = &guild_lock.read().await.config;
-            guild_lock.write().await.markov_chain.feed_str(&msg.content);
-            if matches!(msg.mentions_me(http).await, Ok(true))
-                || (msg.id.0 % config.freq == 0 && config.auto_post_enabled)
-            {
-                let _ = crate::send_nonsense(&ctx, msg.channel_id, guild_id).await;
-            }
-        }
     }
 }
