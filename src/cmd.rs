@@ -130,8 +130,8 @@ async fn ping_off(ctx: &Context, msg: &Message) -> CommandResult {
 async fn freq(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     let guild_id = msg.guild_id.unwrap();
     let new_freq = args.parse::<u64>()?;
-    if new_freq > 0 {
-        return Err("Invalid frequency".into());
+    if new_freq == 0 {
+        return Err("Zero is not a valid frequency".into());
     }
     let data = ctx.data.read().await;
     let state = get_state(&data).await;
