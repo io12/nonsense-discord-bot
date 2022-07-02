@@ -4,7 +4,7 @@
 
 Install [Rust](https://rustup.rs/).
 
-Run with `NONSENSE_TOKEN=... NONSENSE_PREFIX="!nonsense " cargo run`.
+Run with `NONSENSE_TOKEN=... NONSENSE_PREFIX='!nonsense ' cargo run`.
 
 ## Commands
 
