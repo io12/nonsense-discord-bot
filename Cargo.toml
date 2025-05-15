@@ -7,13 +7,13 @@ publish = false
 
 [dependencies]
 markov = "1.1.0"
-regex = "1.5.6"
-lazy_static = "1.4.0"
+regex = "1.11.1"
+lazy_static = "1.5.0"
 
 [dependencies.serenity]
-version = "0.11.2"
+version = "0.11.7"
 features = ["utils"]
 
 [dependencies.tokio]
-version = "1.20.3"
+version = "1.45.0"
 features = ["macros", "rt-multi-thread"]
