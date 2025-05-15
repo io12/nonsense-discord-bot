@@ -166,16 +166,16 @@ fn is_convo_message(message: &Message) -> bool {
 
 #[hook]
 async fn normal_message_hook(ctx: &Context, msg: &Message) {
-    let guild_id = if let Some(guild_id) = msg.guild_id {
-        guild_id
-    } else {
+    let Some(guild_id) = msg.guild_id else {
         return;
     };
     if is_convo_message(msg) {
         let data = ctx.data.read().await;
         let state = get_state(&data);
         let guilds = state.guilds.read().await;
-        let guild_lock = &guilds[&guild_id];
+        let Some(guild_lock) = &guilds.get(&guild_id) else {
+            return;
+        };
         let config = guild_lock.read().await.config;
         {
             guild_lock.write().await.markov_chain.feed_str(&msg.content);
